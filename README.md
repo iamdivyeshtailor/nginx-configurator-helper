@@ -1,0 +1,1 @@
+# nginx-configurator-helper
