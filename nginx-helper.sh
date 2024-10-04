@@ -31,6 +31,36 @@ install_nginx() {
     fi
 }
 
+# Function to check if Certbot is installed
+check_certbot_installed() {
+    if ! command -v certbot &> /dev/null; then
+        echo "Certbot is not installed on this system."
+        read -p "Do you want to install Certbot? (y/n): " install_certbot
+        if [ "$install_certbot" == "y" ]; then
+            install_certbot
+        else
+            echo "Certbot installation skipped. SSL certificate will not be assigned."
+            return 1
+        fi
+    else
+        echo "Certbot is already installed."
+    fi
+    return 0
+}
+
+# Function to install Certbot
+install_certbot() {
+    echo "Installing Certbot..."
+    sudo apt update
+    sudo apt install certbot python3-certbot-nginx -y
+    if [ $? -eq 0 ]; then
+        echo "Certbot installed successfully."
+    else
+        echo "Certbot installation failed. Please install Certbot manually and try again."
+        exit 1
+    fi
+}
+
 # Step 1: Check if Nginx is installed
 check_nginx_installed
 
@@ -88,4 +118,18 @@ if [ $? -eq 0 ]; then
     echo "Nginx has been reloaded with the new configuration."
 else
     echo "There is an error in the Nginx configuration. Please fix the issues and try again."
+    exit 1
 fi
+
+# Step 9: Check if Certbot is installed and offer to install SSL certificate
+check_certbot_installed
+if [ $? -eq 0 ]; then
+    echo "Assigning SSL certificate using Certbot for domain: $domain_name"
+    sudo certbot --nginx -d $domain_name
+    if [ $? -eq 0 ]; then
+        echo "SSL certificate successfully assigned to $domain_name."
+    else
+        echo "Failed to assign SSL certificate. Please try manually."
+    fi
+fi
+
